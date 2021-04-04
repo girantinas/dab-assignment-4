@@ -1,69 +1,53 @@
 # Setup
 
+For this assignment you'll need a bit of software. We've listed everything you need below.
+
 ### git
 
-Install git: https://git-scm.com/downloads
+In order to work locally on the project, you will need to clone your repository onto your machine using git. If you do not have it already, you can download it [here](https://git-scm.com/downloads)
 
-Choose your operating system and install git by following the installation instructions. You may need to restart your terminal for changes to take effect.
+### Go
 
-### Golang
+You will be writing this server in Go. You can download the latest version of Go [here](https://golang.org/dl/).
 
-Please choose the latest stable version (1.15.2) for your operating system here: https://golang.org/dl/
+### Text Editors
 
-##### `GOROOT` and `GOPATH`
+We recommend also that you use a very good text editor for this assignment. Here are several options if you're unsure of which to use.
 
-If you are having difficulties with downloading and importing libraries, the most likely reason is a misconfigured `GOROOT` and/or `GOPATH`. 
+ - [VS Code](https://code.visualstudio.com/download)
+ - [Sublime](https://www.sublimetext.com/3)
+ - [Atom](https://atom.io/)
+ - [Notepad++](https://notepad-plus-plus.org/downloads/)
+ - [Vim](https://www.vim.org/download.php)
 
-The `GOROOT` points to the Golang installation location and defaults to `/usr/local/go` for Unix and `C:\Go` for Windows if it is not set. If you install Golang anywhere else, you must set the `GOROOT` environmental variable.
+## Starting
 
-`GOPATH` lists locations where Golang looks for Go code. It is used to resolve import statements. Directories listed as `GOPATH` must have the subdirectories `src`, `bin`, and `pkg`, and the `src` contains the Golang modules.
+Since this repository acts as a template, you will need to do a bit of extra work before you can clone it to your machine.
 
-Follow this link for more information about `GOPATH`: https://golang.org/cmd/go/#hdr-GOPATH_environment_variable
+1. Click the `Use this template` button at the very top of the repository on GitHub.
 
-Follow this link for more information about setting `GOPATH`: https://github.com/golang/go/wiki/SettingGOPATH
+2. Name the repository whatever you'd like and give the repository whatever description you'd like. Please also make the repository private.
 
-### Text editors
+3. Click `Create repository from template`.
 
-You may choose any text editor of your choosing:
+4. From there, you can use `git clone <LINK TO YOUR REPO>` to clone your newly created repository onto your computer and start working!
 
- - VS Code: https://code.visualstudio.com/download
- - Sublime Text: https://www.sublimetext.com/3
- - Notepad++: https://notepad-plus-plus.org/downloads/
- - Atom: https://atom.io/
- - Vim: https://www.vim.org/download.php
+5. You may also want to set the original repository as a remote in case we make changes to the starter code. You can do that with `git remote add source https://github.com/BearCloud/sp21-assignment-4.git`. If we make changes to the starter code, you can use `git pull source master --allow-unrelated-histories` to integrate the changes with the ones you have.
 
-You may also use a text editor not present in this list. Choose one that you find most comfortable to use.
+# Your Task
 
-### Starting
+In this assignment, you will be implementing most of a simple HTTP web server that will perform two primary tasks; echo back parts of an HTTP request and manipulate user credentials. To keep things simple, we will not be worrying about issues of security nor persistent storage of credentials. We will deal with this when we implement Bearchat! All of your work for this assignment will be done in `api/api.go`.
 
-We will assume that you have git and Golang properly set up, and that you are logged into Github.
+You will need to complete all of the functions in `api/api.go` to complete the assignment. Specifics abotu what each function does is listed in the comments above the functions.
 
-**Do not run `git clone` on this repository.** Instead perform the following:
+If you need a refresher as to how HTTP works or how to work with HTTP in Go, check out `REFRESHER.md`. You can also ask us any questions on Discord!
 
-1. First create a repository in Github (**not** git) via this link: https://github.com/new
+# Testing
 
-2. Create a new repository using git by running the following commands in a directory of your choosing:
-```
-git init
-git branch -M master
-git remote add origin <YOUR GITHUB REPO LINK HERE>
-git push -u origin master
-```
-A variation of these commands are present in the "...or create a new repository on the command line" section after you create a repository on Github.
+To test your implementation, we have provided a comprehensive suite of tests in `api/api_test.go`. Simply run `go test -v` in that directory and you should see every test pass if your implementation is correct.
 
-3. Add this project's repository as remote and alias it to `source`:
-```
-git remote add source https://github.com/BearCloud/proj0.git
-```
+We also encourage you to play around with the server and run it yourself. There are two ways to do this. 
 
-4. Run the following command to pull starter code:
-```
-git pull source master
-```
+The first way is to open a terminal window and run `go run main.go` in the directory with `main.go`. You should then be able to make requests to the server on port 80. For example, you can try visiting `http://localhost:80/api/getQuery?userID=40` using a web browser or [Insomnia](https://insomnia.rest/products/insomnia) and you should see `40` returned back to you.
 
-5. Run the following command to install the required Golang packages:
-```
-go mod download
-```
-
-6. You are done with setup.
+The second way is to use [Docker](https://www.docker.com/products/docker-desktop). We have provided a `Dockerfile` you can use to create a container running your server. To run the server in a container, first build the image for the container using the command `docker build -t practice-server .` in the directory with the server files. Then run the server in a container using `docker run -p 80:80 --name practice-server practice-server`. If all went well, you should be able to see the server running if you do `docker ps -a` on another terminal window and you should be able to make requests to it on port 80 as described above. We recommend you use this file as a reference when you make Bearchat!

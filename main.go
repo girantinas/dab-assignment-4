@@ -1,17 +1,16 @@
-
 package main
 
 import (
 	"log"
 	"net/http"
-	"github.com/BearCloud/proj0/api"
+
+	"github.com/BearCloud/sp21-assignment-4/api"
 	"github.com/gorilla/mux"
 )
 
 func main() {
 	// Create a new mux for routing api calls
 	router := mux.NewRouter()
-
 
 	//Register our endpoints
 	//See /api/api.go
@@ -25,7 +24,6 @@ func main() {
 	//Print log to output, very similar to fmt.Println
 	//What are the differences?
 	log.Println("starting go server")
-	
-	http.ListenAndServe(":80", router)
 
+	http.ListenAndServe(":80", router)
 }
