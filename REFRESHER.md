@@ -6,7 +6,9 @@ This file is for students who need a refresher on the relevant concepts on HTTP 
 
 ## Introduction
 
-In order for computers to communicate with each other over a network, they must follow a protocol so all communication between them is understood. The most common protocol for this is the HyperText Transfer Protocol (**HTTP**).
+In order for computers to communicate with each other over a network, they must follow a protocol so all communication between them is understood. The most common protocol for this is the HyperText Transfer Protocol (**HTTP**). 
+
+Note: If you'd prefer an explanation with more diagrams, the *Further Reading* section includes an excellent overview of HTTP with some.
 
 ## Client and Server Protocol
 
