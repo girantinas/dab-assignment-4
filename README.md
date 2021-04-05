@@ -38,7 +38,7 @@ Since this repository acts as a template, you will need to do a bit of extra wor
 
 In this assignment, you will be implementing most of a simple HTTP web server that will perform two primary tasks; echo back parts of an HTTP request and manipulate user credentials. To keep things simple, we will not be worrying about issues of security nor persistent storage of credentials. We will deal with this when we implement Bearchat! All of your work for this assignment will be done in `api/api.go`.
 
-You will need to complete all of the functions in `api/api.go` to complete the assignment. Specifics abotu what each function does is listed in the comments above the functions.
+You will need to complete all of the functions in `api/api.go` to complete the assignment. Specifics about what each function does is listed in the comments above the functions. We have also provided the entire API you will be implementing in `API.md`.
 
 If you need a refresher as to how HTTP works or how to work with HTTP in Go, check out `REFRESHER.md`. You can also ask us any questions on Discord!
 
