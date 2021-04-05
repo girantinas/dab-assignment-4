@@ -63,7 +63,6 @@ func TestRegisterRoutes(t *testing.T) {
 		// Each endpoint in our API has exactly one HTTP method associated with it.
 		if len(methods) > 1 {
 			t.Errorf("Endpoint %s has %d methods registered to it. It should only have 1.", route.Endpoint, len(methods))
-			continue
 		}
 	}
 }
