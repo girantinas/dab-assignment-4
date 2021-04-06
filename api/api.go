@@ -1,7 +1,14 @@
 package api
 
+// We've left in some packages that you may find helpful while
+// implementing this assignment. You're free to use whatever packages
+// you'd like, but these are the ones we used to do this. To use the package,
+// just remove the underscore in front of it.
 import (
+	_ "encoding/json"
+	_ "fmt"
 	"net/http"
+	_ "strconv"
 
 	"github.com/gorilla/mux"
 )

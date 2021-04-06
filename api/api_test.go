@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"reflect"
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/gorilla/mux"
@@ -163,16 +164,14 @@ func TestGetJSON(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.Name, func(t *testing.T) {
 			// Create a fake request with our JSON and a ResponseWriter.
-			req, rec, err := createRequestAndResponseWithJSON(test.JSON, http.MethodGet, "/api/getJSON")
-			if err != nil {
-				t.Fatal(err)
-			}
+			req := httptest.NewRequest(http.MethodGet, "/api/getJSON", strings.NewReader(test.JSON))
+			rec := httptest.NewRecorder()
 
 			// Call the function with our JSON.
 			getJSON(rec, req)
 
 			// Now test that the correct code and body were returned.
-			err = checkStatusCodeAndBody(test.ExpectedStatusCode, rec.Result().StatusCode, test.ExpectedResponse, rec.Body.String())
+			err := checkStatusCodeAndBody(test.ExpectedStatusCode, rec.Result().StatusCode, test.ExpectedResponse, rec.Body.String())
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -182,16 +181,16 @@ func TestGetJSON(t *testing.T) {
 
 // Tests the correctness of the Signup function.
 func TestSignup(t *testing.T) {
-	// Make sure there are no users already before starting the test.
-	clearGlobalSlice()
-
 	// Tests that the signup function can sign 50 users up.
 	t.Run("Basic Signup", func(t *testing.T) {
+		// Make sure there are no users already before starting the test.
+		clearGlobalSlice()
+
 		// Create a list of 50 test users. For each user call the function
 		// so they are added to the global slice.
 		users := make([]Credentials, 50)
 		for i := 0; i < 50; i++ {
-			users = append(users, Credentials{strconv.Itoa(i), strconv.Itoa(i)})
+			users[i] = Credentials{strconv.Itoa(i), strconv.Itoa(i)}
 
 			// Create a new request for the method with a JSON for this user.
 			req, rec, err := createRequestAndResponseWithJSON(users[i], http.MethodGet, "/api/signup")
@@ -209,7 +208,7 @@ func TestSignup(t *testing.T) {
 		}
 
 		// Check that the slices have the same users in the same order.
-		if reflect.DeepEqual(UserSlice, users) {
+		if !reflect.DeepEqual(UserSlice, users) {
 			t.Error("Global slice has wrong contents.")
 		}
 	})
@@ -227,10 +226,8 @@ func TestSignup(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.Name, func(t *testing.T) {
 			// Setup a request for this bad JSON.
-			req, rec, err := createRequestAndResponseWithJSON(test.JSON, http.MethodGet, "/api/signup")
-			if err != nil {
-				t.Fatal(err)
-			}
+			req := httptest.NewRequest(http.MethodGet, "/api/signup", strings.NewReader(test.JSON))
+			rec := httptest.NewRecorder()
 
 			// Make sure the size of the slice before and after the call is the same.
 			sizeBefore := len(UserSlice)
@@ -245,21 +242,20 @@ func TestSignup(t *testing.T) {
 
 	// Lastly, check that we get a conflict error if the same username is used twice.
 	t.Run("Conflict", func(t *testing.T) {
+		// Make sure there are no users already before starting the test.
+		clearGlobalSlice()
+
 		// The first user should be able to sign up with no problems.
-		req, rec, err := createRequestAndResponseWithJSON(normalJSON, http.MethodGet, "/api/signup")
-		if err != nil {
-			t.Fatal(err)
-		}
+		req := httptest.NewRequest(http.MethodGet, "/api/signup", strings.NewReader(normalJSON))
+		rec := httptest.NewRecorder()
 		signup(rec, req)
 		if rec.Result().StatusCode != http.StatusCreated {
 			t.Fatalf("Failed to signup first user. Got status code %d. Expected status code %d", rec.Result().StatusCode, http.StatusCreated)
 		}
 
 		// The second user should fail to signup.
-		req, rec, err = createRequestAndResponseWithJSON(normalJSON, http.MethodGet, "/api/signup")
-		if err != nil {
-			t.Fatal(err)
-		}
+		req = httptest.NewRequest(http.MethodGet, "/api/signup", strings.NewReader(normalJSON))
+		rec = httptest.NewRecorder()
 		sizeBefore := len(UserSlice)
 		signup(rec, req)
 		if sizeBefore != len(UserSlice) {
