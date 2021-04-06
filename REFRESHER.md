@@ -154,7 +154,7 @@ if err != nil {
   w.Write(body)
 }
 ```
-As you can see in this example, using a `ResponseWriter` is not too much different from what you're already used to. It's just learning a few new functions. If you'd like to play around with this example, here is a [link to a playground](https://play.golang.org/p/EOpKHwHFSVl).
+As you can see in this example, using a `ResponseWriter` is not too much different from what you're already used to. It's just learning a few new functions. Note in the example above, we used `Write()` to write to the body of the response, but if you have a `string` you want to write to it, it is often more convenient to use [`fmt.Fprintf()`](https://golang.org/pkg/fmt/#Fprintf). If you'd like to play around with this example, here is a [link to a playground](https://play.golang.org/p/EOpKHwHFSVl).
 
 The playground also includes an example of setting a cookie. Here it is for your convenience.
 
@@ -202,7 +202,7 @@ There are different functions to call if you want to put a JSON into a response 
 
 For the rest of this section, we'll describe some caveats you should be aware of when using this library. All these caveats are also shown in [this playground](https://play.golang.org/p/uFGmt9dFVRf).
 
-If you try to unmarshal a JSON with extra keys, the extra keys are ignored by Go. In the example above, if we had added a `sauce` key to the JSON but not the struct, the resulting struct would be exactly the same.
+If you try to unmarshal a JSON with extra keys, the extra keys are ignored by Go by default. In the example above, if we had added a `sauce` key to the JSON but not the struct, the resulting struct would be exactly the same. You can change this behavior using [`DisallowUnknownFields`](https://golang.org/pkg/encoding/json/#Decoder.DisallowUnknownFields)
 
 Also if you unmarshal a JSON into a struct and the JSON is missing keys (say the JSON in our pizza example is missing the `radius`) the struct is initialized to its zero value for that variable. See the playground for an example of that.
 

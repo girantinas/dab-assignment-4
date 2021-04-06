@@ -1,8 +1,13 @@
 package api
 
 import (
+	"bytes"
+	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
+	"strconv"
 	"testing"
 
 	"github.com/gorilla/mux"
@@ -67,4 +72,245 @@ func TestRegisterRoutes(t *testing.T) {
 	}
 }
 
+// Verifies the correctness of the getCookie function.
+func TestGetCookie(t *testing.T) {
+	// Each test will use a different set of cookies.
+	tests := []struct {
+		Name             string
+		Cookies          []*http.Cookie
+		ExpectedResponse string
+	}{
+		{"Basic Cookie", []*http.Cookie{{Name: "access_token", Value: "test_value"}}, "test_value"},
+		{"Wrong Cookie", []*http.Cookie{{Name: "not_access_token", Value: "a_value"}}, ""},
+		{"No Cookie", []*http.Cookie{}, ""},
+		{"Multiple Cookies", []*http.Cookie{{Name: "access_token", Value: "cool_value"}, {Name: "not_access_token", Value: "a_true_value"}}, "cool_value"},
+	}
+
+	// Go through each one of our tests.
+	for _, test := range tests {
+		t.Run(test.Name, func(t *testing.T) {
+			// Create a fake request and ResponseWriter.
+			req := httptest.NewRequest(http.MethodGet, "/api/getCookie", nil)
+			rec := httptest.NewRecorder()
+
+			// Add the cookies for this test to the request.
+			for _, cookie := range test.Cookies {
+				req.AddCookie(cookie)
+			}
+
+			// Call the function using our fake request and recorder.
+			getCookie(rec, req)
+
+			// Check that everything matched what we expected.
+			err := checkStatusCodeAndBody(http.StatusOK, rec.Result().StatusCode, test.ExpectedResponse, rec.Body.String())
+			if err != nil {
+				t.Fatal(err)
+			}
+		})
+	}
+}
+
+// Test the correctness of the getQuery function.
+func TestGetQuery(t *testing.T) {
+	// Each test will change the query parameter present in the request.
+	tests := []struct {
+		Name             string
+		Params           string
+		ExpectedResponse string
+	}{
+		{"Basic Query", "userID=40", "40"},
+		{"No Params", "", ""},
+		{"Multiple Query Params", "userID=the_id&secondParam=second", "the_id"},
+		{"No userID", "aParam=Some_Parameter", ""},
+	}
+
+	// Run all the tests.
+	for _, test := range tests {
+		t.Run(test.Name, func(t *testing.T) {
+			// Create a fake request with our query params and a ResponseWriter.
+			req := httptest.NewRequest(http.MethodGet, "/api/getQuery?"+test.Params, nil)
+			rec := httptest.NewRecorder()
+
+			// Call the function.
+			getQuery(rec, req)
+
+			// Now test the Status Code and make sure the body is right.
+			err := checkStatusCodeAndBody(200, rec.Result().StatusCode, test.ExpectedResponse, rec.Body.String())
+			if err != nil {
+				t.Fatal(err)
+			}
+		})
+	}
+}
+
+func TestGetJSON(t *testing.T) {
+	// Make our tests.
+	tests := []struct {
+		Name               string
+		JSON               string
+		ExpectedStatusCode int
+		ExpectedResponse   string
+	}{
+		{"Basic JSON", normalJSON, http.StatusOK, "OskiBear\nHoshJug"},
+		{"Extra Stuff In JSON", extraJSON, http.StatusOK, "The Finger\nThe Hill"},
+		{"Missing Password", missingPasswordJSON, http.StatusBadRequest, ""},
+		{"Missing Username", missingUsernameJSON, http.StatusBadRequest, ""},
+		{"Empty JSON", emptyJSON, http.StatusBadRequest, ""},
+		{"Empty Body", "", http.StatusBadRequest, ""},
+	}
+
+	// Run all of the tests.
+	for _, test := range tests {
+		t.Run(test.Name, func(t *testing.T) {
+			// Create a fake request with our JSON and a ResponseWriter.
+			req, rec, err := createRequestAndResponseWithJSON(test.JSON, http.MethodGet, "/api/getJSON")
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			// Call the function with our JSON.
+			getJSON(rec, req)
+
+			// Now test that the correct code and body were returned.
+			err = checkStatusCodeAndBody(test.ExpectedStatusCode, rec.Result().StatusCode, test.ExpectedResponse, rec.Body.String())
+			if err != nil {
+				t.Fatal(err)
+			}
+		})
+	}
+}
+
+// Tests the correctness of the Signup function.
+func TestSignup(t *testing.T) {
+	// Make sure there are no users already before starting the test.
+	clearGlobalSlice()
+
+	// Tests that the signup function can sign 50 users up.
+	t.Run("Basic Signup", func(t *testing.T) {
+		// Create a list of 50 test users. For each user call the function
+		// so they are added to the global slice.
+		users := make([]Credentials, 50)
+		for i := 0; i < 50; i++ {
+			users = append(users, Credentials{strconv.Itoa(i), strconv.Itoa(i)})
+
+			// Create a new request for the method with a JSON for this user.
+			req, rec, err := createRequestAndResponseWithJSON(users[i], http.MethodGet, "/api/signup")
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			// Call the function.
+			signup(rec, req)
+
+			// Now make sure the code is right.
+			if rec.Result().StatusCode != http.StatusCreated {
+				t.Fatalf("Failed to signup user %d. Got status code %d. Expected status code %d", i, rec.Result().StatusCode, http.StatusCreated)
+			}
+		}
+
+		// Check that the slices have the same users in the same order.
+		if reflect.DeepEqual(UserSlice, users) {
+			t.Error("Global slice has wrong contents.")
+		}
+	})
+
+	// Check that the function errors on bad JSON.
+	tests := []struct {
+		Name string
+		JSON string
+	}{
+		{"Missing Password", missingPasswordJSON},
+		{"Missing Username", missingUsernameJSON},
+		{"Empty JSON", emptyJSON},
+		{"Empty Body", ""},
+	}
+	for _, test := range tests {
+		t.Run(test.Name, func(t *testing.T) {
+			// Setup a request for this bad JSON.
+			req, rec, err := createRequestAndResponseWithJSON(test.JSON, http.MethodGet, "/api/signup")
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			// Make sure the size of the slice before and after the call is the same.
+			sizeBefore := len(UserSlice)
+			signup(rec, req)
+			if sizeBefore != len(UserSlice) {
+				t.Fatal("Global slice got larger for a bad JSON!")
+			}
+
+			checkStatusCodeAndBody(http.StatusBadRequest, rec.Result().StatusCode, "", rec.Body.String())
+		})
+	}
+
+	// Lastly, check that we get a conflict error if the same username is used twice.
+	t.Run("Conflict", func(t *testing.T) {
+		// The first user should be able to sign up with no problems.
+		req, rec, err := createRequestAndResponseWithJSON(normalJSON, http.MethodGet, "/api/signup")
+		if err != nil {
+			t.Fatal(err)
+		}
+		signup(rec, req)
+		if rec.Result().StatusCode != http.StatusCreated {
+			t.Fatalf("Failed to signup first user. Got status code %d. Expected status code %d", rec.Result().StatusCode, http.StatusCreated)
+		}
+
+		// The second user should fail to signup.
+		req, rec, err = createRequestAndResponseWithJSON(normalJSON, http.MethodGet, "/api/signup")
+		if err != nil {
+			t.Fatal(err)
+		}
+		sizeBefore := len(UserSlice)
+		signup(rec, req)
+		if sizeBefore != len(UserSlice) {
+			t.Fatalf("User with conflicting name was able to sign up.")
+		}
+		if rec.Result().StatusCode != http.StatusConflict {
+			t.Fatalf("Second user may have succeeded to sign up. Got status code %d. Expected status code %d", rec.Result().StatusCode, http.StatusConflict)
+		}
+	})
+}
+
 // TODO: Write more tests!
+
+// Helper Methods and JSON
+
+// Make some test JSON objects
+const (
+	normalJSON          = `{"username":"OskiBear", "password":"HoshJug"}`
+	extraJSON           = `{"username":"The Finger", "password":"The Hill", "the sum of all":"human knowledge"}`
+	missingPasswordJSON = `{"username":"No Password"}`
+	missingUsernameJSON = `{"password":"oops forgot my username"}`
+	emptyJSON           = `{}`
+)
+
+// Checks to make sure the body and status code are what we expect.
+// Gives an error with a descriptive message if they don't match.
+func checkStatusCodeAndBody(expectedCode, actualCode int, expectedBody, actualBody string) error {
+	if actualCode != expectedCode {
+		return fmt.Errorf("Incorrect status code returned! Expected: %d Actual: %d", expectedCode, actualCode)
+	}
+	if actualBody != expectedBody {
+		return fmt.Errorf("Incorrect body returned! Expected: \"%s\" Actual: \"%s\"", expectedBody, actualBody)
+	}
+	return nil
+}
+
+// Sets the global slice of Credentials to an empty slice. Useful for
+// ensuring the tests stay independent.
+func clearGlobalSlice() {
+	UserSlice = make([]Credentials, 0)
+}
+
+// Given an object that can be marshalled by a JSON, creates a request and response
+// pair to be sent to a function with that object in a JSON.
+func createRequestAndResponseWithJSON(jsonObj interface{}, method, endpoint string) (*http.Request, *httptest.ResponseRecorder, error) {
+	jsonBytes, err := json.Marshal(jsonObj)
+	if err != nil {
+		return nil, nil, fmt.Errorf("An error occurred while marshalling the JSON: %s", err)
+	}
+	b := bytes.NewBuffer(jsonBytes)
+	req := httptest.NewRequest(method, endpoint, b)
+	rec := httptest.NewRecorder()
+	return req, rec, nil
+}
