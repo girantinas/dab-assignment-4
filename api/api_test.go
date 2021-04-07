@@ -1,6 +1,8 @@
 package api
 
 import (
+	"bytes"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -68,3 +70,232 @@ func TestRegisterRoutes(t *testing.T) {
 }
 
 // TODO: Write more tests!
+
+func TestGetIndex(t *testing.T) {
+	clearGlobalSlice()
+	handlerGetIndex := http.HandlerFunc(getIndex)
+
+	// First try to get index of nonexistent user
+	var jsonGetIndex = []byte(`{"username":"student1"}`)
+
+	req, err := http.NewRequest("GET", "/api/getIndex", bytes.NewBuffer(jsonGetIndex))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	rr := httptest.NewRecorder()
+	handlerGetIndex.ServeHTTP(rr, req)
+
+	if status := rr.Code; status != http.StatusBadRequest {
+		t.Errorf("handler returned wrong status code: got %v want %v",
+			status, http.StatusBadRequest)
+	}
+
+	signUserUp("student1", "dab")
+
+	// Now get index of registered user
+	req, err = http.NewRequest("GET", "/api/getIndex", bytes.NewBuffer(jsonGetIndex))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	rr = httptest.NewRecorder()
+	handlerGetIndex.ServeHTTP(rr, req)
+
+	if status := rr.Code; status != http.StatusOK {
+		t.Errorf("handler returned wrong status code: got %v want %v",
+			status, http.StatusOK)
+	}
+
+	expected := `0`
+	if rr.Body.String() != expected {
+		t.Errorf("handler returned unexpected body: got %v want %v",
+			rr.Body.String(), expected)
+	}
+
+	clearGlobalSlice()
+}
+
+func TestGetPW(t *testing.T) {
+	clearGlobalSlice()
+	handlerGetPW := http.HandlerFunc(getPassword)
+
+	// Get password of registered user
+	signUserUp("student1", "dab")
+
+	var jsonGetPW = []byte(`{"username":"student1"}`)
+
+	req, err := http.NewRequest("GET", "/api/getPW", bytes.NewBuffer(jsonGetPW))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	rr := httptest.NewRecorder()
+	handlerGetPW.ServeHTTP(rr, req)
+
+	if status := rr.Code; status != http.StatusOK {
+		t.Errorf("handler returned wrong status code: got %v want %v",
+			status, http.StatusOK)
+	}
+
+	expected := `dab`
+	if rr.Body.String() != expected {
+		t.Errorf("handler returned unexpected body: got %v want %v",
+			rr.Body.String(), expected)
+	}
+
+	// Get password of unregistered user
+	var jsonGetPWBad = []byte(`{"username":"student001"}`)
+
+	req, err = http.NewRequest("GET", "/api/getPW", bytes.NewBuffer(jsonGetPWBad))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	rr = httptest.NewRecorder()
+	handlerGetPW.ServeHTTP(rr, req)
+
+	if status := rr.Code; status != http.StatusBadRequest {
+		t.Errorf("handler returned wrong status code: got %v want %v",
+			status, http.StatusBadRequest)
+	}
+
+	clearGlobalSlice()
+}
+
+func TestUpdatePW(t *testing.T) {
+	clearGlobalSlice()
+	handlerGetPW := http.HandlerFunc(getPassword)
+	handlerUpdatePW := http.HandlerFunc(updatePassword)
+
+	// Sign user up
+	signUserUp("student1", "dab")
+
+	var jsonGetPW = []byte(`{"username":"student1"}`)
+
+	req, err := http.NewRequest("GET", "/api/getPW", bytes.NewBuffer(jsonGetPW))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	rr := httptest.NewRecorder()
+	handlerGetPW.ServeHTTP(rr, req)
+
+	if status := rr.Code; status != http.StatusOK {
+		t.Errorf("handler returned wrong status code: got %v want %v",
+			status, http.StatusOK)
+	}
+
+	expected := `dab`
+	if rr.Body.String() != expected {
+		t.Errorf("handler returned unexpected body: got %v want %v",
+			rr.Body.String(), expected)
+	}
+
+	// Update password
+	var jsonUpdatePW = []byte(`{"username":"student1", "password":"dabdab"}`)
+
+	req, err = http.NewRequest("GET", "/api/updatePW", bytes.NewBuffer(jsonUpdatePW))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	rr = httptest.NewRecorder()
+	handlerUpdatePW.ServeHTTP(rr, req)
+
+	if status := rr.Code; status != http.StatusOK {
+		t.Errorf("handler returned wrong status code: got %v want %v",
+			status, http.StatusOK)
+	}
+
+	// Verify password was changed
+	var jsonGetNewPW = []byte(`{"username":"student1"}`)
+
+	req, err = http.NewRequest("GET", "/api/getPW", bytes.NewBuffer(jsonGetNewPW))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	rr = httptest.NewRecorder()
+	handlerGetPW.ServeHTTP(rr, req)
+
+	if status := rr.Code; status != http.StatusOK {
+		t.Errorf("handler returned wrong status code: got %v want %v",
+			status, http.StatusOK)
+	}
+
+	expected = `dabdab`
+	if rr.Body.String() != expected {
+		t.Errorf("handler returned unexpected body: got %v want %v",
+			rr.Body.String(), expected)
+	}
+
+	// Try to update password of unregistered user
+	var jsonUpdatePWBad = []byte(`{"username":"student001"}`)
+
+	req, err = http.NewRequest("GET", "/api/updatePW", bytes.NewBuffer(jsonUpdatePWBad))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	rr = httptest.NewRecorder()
+	handlerUpdatePW.ServeHTTP(rr, req)
+
+	if status := rr.Code; status != http.StatusBadRequest {
+		t.Errorf("handler returned wrong status code: got %v want %v",
+			status, http.StatusBadRequest)
+	}
+
+	clearGlobalSlice()
+}
+
+func TestDeleteUser(t *testing.T) {
+	clearGlobalSlice()
+	handlerDelete := http.HandlerFunc(deleteUser)
+
+	signUserUp("student1", "dab")
+
+	var jsonDelete = []byte(`{"username":"student1"}`)
+	req, _ := http.NewRequest("DELETE", "/api/deleteUser", bytes.NewBuffer(jsonDelete))
+
+	rr := httptest.NewRecorder()
+	handlerDelete.ServeHTTP(rr, req)
+
+	if status := rr.Code; status != http.StatusOK {
+		t.Errorf("handler returned wrong status code: got %v want %v",
+			status, http.StatusOK)
+	}
+
+	// Try to delete user again
+	req, _ = http.NewRequest("DELETE", "/api/deleteUser", bytes.NewBuffer(jsonDelete))
+
+	rr = httptest.NewRecorder()
+	handlerDelete.ServeHTTP(rr, req)
+
+	if status := rr.Code; status != http.StatusBadRequest {
+		t.Errorf("handler returned wrong status code: got %v want %v",
+			status, http.StatusBadRequest)
+	}
+}
+
+func signUserUp(username string, password string) {
+	var jsonStr = []byte(fmt.Sprintf(`{"username":"%v", "password":"%v"}`, username, password))
+
+	rr := httptest.NewRecorder()
+	handlerSignup := http.HandlerFunc(signup)
+
+	req, _ := http.NewRequest("POST", "/api/signup", bytes.NewBuffer(jsonStr))
+
+	handlerSignup.ServeHTTP(rr, req)
+}
+
+func clearUser(username string) {
+	var jsonStr = []byte(fmt.Sprintf(`{"username":"%v"}`, username))
+
+	rr := httptest.NewRecorder()
+	handlerDelete := http.HandlerFunc(deleteUser)
+
+	req, _ := http.NewRequest("DELETE", "/api/deleteUser", bytes.NewBuffer(jsonStr))
+
+	handlerDelete.ServeHTTP(rr, req)
+}
