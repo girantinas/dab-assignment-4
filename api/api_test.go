@@ -320,7 +320,7 @@ func TestGetPW(t *testing.T) {
 		creds := Credentials{"student1", "dab"}
 		UserSlice = append(UserSlice, creds)
 
-		req := httptest.NewRequest(http.MethodGet, "/api/getPassword", strings.NewReader("student1"))
+		req := httptest.NewRequest(http.MethodGet, "/api/getPassword", strings.NewReader(`{"username":"student1"}`))
 		rr := httptest.NewRecorder()
 
 		getPassword(rr, req)
