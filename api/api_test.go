@@ -136,7 +136,7 @@ func TestGetQuery(t *testing.T) {
 			getQuery(rec, req)
 
 			// Now test the Status Code and make sure the body is right.
-			err := checkStatusCodeAndBody(200, rec.Result().StatusCode, test.ExpectedResponse, rec.Body.String())
+			err := checkStatusCodeAndBody(http.StatusOK, rec.Result().StatusCode, test.ExpectedResponse, rec.Body.String())
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -144,6 +144,7 @@ func TestGetQuery(t *testing.T) {
 	}
 }
 
+// Tests the correctness of the getJSON function.
 func TestGetJSON(t *testing.T) {
 	// Make our tests.
 	tests := []struct {
@@ -236,7 +237,10 @@ func TestSignup(t *testing.T) {
 				t.Fatal("Global slice got larger for a bad JSON!")
 			}
 
-			checkStatusCodeAndBody(http.StatusBadRequest, rec.Result().StatusCode, "", rec.Body.String())
+			err := checkStatusCodeAndBody(http.StatusBadRequest, rec.Result().StatusCode, "", rec.Body.String())
+			if err != nil {
+				t.Fatal(err)
+			}
 		})
 	}
 
