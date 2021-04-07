@@ -123,8 +123,7 @@ func updatePassword(response http.ResponseWriter, request *http.Request) {
 // Our JSON file will look like this:
 //
 // {
-// 	"username" : <username>,
-// 	"password" : <password,
+// 	"username" : <username>
 // }
 //
 // Decode this JSON file into an instance of Credentials.
