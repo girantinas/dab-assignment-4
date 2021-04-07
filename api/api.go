@@ -1,7 +1,14 @@
 package api
 
+// We've left in some packages that you may find helpful while
+// implementing this assignment. You're free to use whatever packages
+// you'd like, but these are the ones we used to do this. To use the package,
+// just remove the underscore in front of it.
 import (
+	_ "encoding/json"
+	_ "fmt"
 	"net/http"
+	_ "strconv"
 
 	"github.com/gorilla/mux"
 )
@@ -28,7 +35,7 @@ func getCookie(response http.ResponseWriter, request *http.Request) {
 	/*YOUR CODE HERE*/
 }
 
-// Obtain the "userID" query paramter and write it to the response.
+// Obtain the "userID" query parameter and write it to the response.
 // If there is no such query parameter, write an empty string to the response.
 func getQuery(response http.ResponseWriter, request *http.Request) {
 	/*YOUR CODE HERE*/
@@ -44,8 +51,7 @@ func getQuery(response http.ResponseWriter, request *http.Request) {
 // Decode this JSON file into an instance of Credentials.
 // Then, write the username and password to the response, separated by a newline.
 //
-// Make sure to error check! If there are any errors, call http.Error(), and pass in a "http.StatusBadRequest".
-// What kind of errors can we expect here?
+// Make sure to error check! What kind of errors can we expect here?
 func getJSON(response http.ResponseWriter, request *http.Request) {
 	/*YOUR CODE HERE*/
 }
@@ -60,8 +66,7 @@ func getJSON(response http.ResponseWriter, request *http.Request) {
 // Decode this JSON file into an instance of Credentials.
 // Then store it ("append" it) to the global slice of Credentials.
 //
-// Make sure to error check! If there are any errors, call http.Error(), and pass in the appropriate error (See API.md).
-// What kind of errors can we expect here?
+// Make sure to error check! What kind of errors can we expect here?
 //
 // If you aren't sure how to append to a slice, check this out: https://tour.golang.org/moretypes/15.
 // On success, make sure the status code is 201 Status Created!
@@ -80,8 +85,7 @@ func signup(response http.ResponseWriter, request *http.Request) {
 //
 // The index will be of type integer, but we can only write strings to the response. What library and function was used to get around this?
 //
-// Make sure to error check! If there are any errors, call http.Error(), and pass in a "http.StatusBadRequest".
-// What kind of errors can we expect here?
+// Make sure to error check! What kind of errors can we expect here?
 func getIndex(response http.ResponseWriter, request *http.Request) {
 	/*YOUR CODE HERE*/
 }
@@ -95,8 +99,7 @@ func getIndex(response http.ResponseWriter, request *http.Request) {
 // Decode this JSON file into an instance of Credentials. (What happens when we don't have all the fields? Does it matter in this case?)
 // Write the password of the specific user to the response.
 //
-// Make sure to error check! If there are any errors, call http.Error(), and pass in a "http.StatusBadRequest".
-// What kind of errors can we expect here?
+// Make sure to error check! What kind of errors can we expect here?
 func getPassword(response http.ResponseWriter, request *http.Request) {
 	/*YOUR CODE HERE*/
 }
@@ -112,8 +115,7 @@ func getPassword(response http.ResponseWriter, request *http.Request) {
 // The password in the JSON file is the new password they want to replace the old password with.
 // You don't need to return anything in this.
 //
-// Make sure to error check! If there are any errors, call http.Error(), and pass in a "http.StatusBadRequest".
-// What kind of errors can we expect here?
+// Make sure to error check! What kind of errors can we expect here?
 func updatePassword(response http.ResponseWriter, request *http.Request) {
 	/*YOUR CODE HERE*/
 }
@@ -121,8 +123,7 @@ func updatePassword(response http.ResponseWriter, request *http.Request) {
 // Our JSON file will look like this:
 //
 // {
-// 	"username" : <username>,
-// 	"password" : <password,
+// 	"username" : <username>
 // }
 //
 // Decode this JSON file into an instance of Credentials.
@@ -132,8 +133,7 @@ func updatePassword(response http.ResponseWriter, request *http.Request) {
 // 	- https://gobyexample.com/slices
 // 	- https://www.delftstack.com/howto/go/how-to-delete-an-element-from-a-slice-in-golang/
 //
-// Make sure to error check! If there are any errors, call http.Error(), and pass in a "http.StatusBadRequest".
-// What kind of errors can we expect here?
+// Make sure to error check! What kind of errors can we expect here?
 func deleteUser(response http.ResponseWriter, request *http.Request) {
 	/*YOUR CODE HERE*/
 }
