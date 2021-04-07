@@ -194,7 +194,7 @@ func TestSignup(t *testing.T) {
 			users[i] = Credentials{strconv.Itoa(i), strconv.Itoa(i)}
 
 			// Create a new request for the method with a JSON for this user.
-			req, rec, err := createRequestAndResponseWithJSON(users[i], http.MethodGet, "/api/signup")
+			req, rec, err := createRequestAndResponseWithJSON(users[i], http.MethodPost, "/api/signup")
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -227,7 +227,7 @@ func TestSignup(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.Name, func(t *testing.T) {
 			// Setup a request for this bad JSON.
-			req := httptest.NewRequest(http.MethodGet, "/api/signup", strings.NewReader(test.JSON))
+			req := httptest.NewRequest(http.MethodPost, "/api/signup", strings.NewReader(test.JSON))
 			rec := httptest.NewRecorder()
 
 			// Make sure the size of the slice before and after the call is the same.
@@ -250,7 +250,7 @@ func TestSignup(t *testing.T) {
 		clearGlobalSlice()
 
 		// The first user should be able to sign up with no problems.
-		req := httptest.NewRequest(http.MethodGet, "/api/signup", strings.NewReader(normalJSON))
+		req := httptest.NewRequest(http.MethodPost, "/api/signup", strings.NewReader(normalJSON))
 		rec := httptest.NewRecorder()
 		signup(rec, req)
 		if rec.Result().StatusCode != http.StatusCreated {
@@ -258,7 +258,7 @@ func TestSignup(t *testing.T) {
 		}
 
 		// The second user should fail to signup.
-		req = httptest.NewRequest(http.MethodGet, "/api/signup", strings.NewReader(normalJSON))
+		req = httptest.NewRequest(http.MethodPost, "/api/signup", strings.NewReader(normalJSON))
 		rec = httptest.NewRecorder()
 		sizeBefore := len(UserSlice)
 		signup(rec, req)
@@ -271,212 +271,180 @@ func TestSignup(t *testing.T) {
 	})
 }
 
-// TODO: Write more tests!
+// Tests the correctness of the getIndex function.
 func TestGetIndex(t *testing.T) {
-	clearGlobalSlice()
-	handlerGetIndex := http.HandlerFunc(getIndex)
 
-	// First try to get index of nonexistent user
-	var jsonGetIndex = []byte(`{"username":"student1"}`)
+	// This test makes sure the function returns an error when it tries to get the index of a user that doesn't exist.
+	t.Run("No User", func(t *testing.T) {
+		clearGlobalSlice()
+		req := httptest.NewRequest(http.MethodGet, "/api/getIndex", strings.NewReader(normalJSON))
+		rr := httptest.NewRecorder()
 
-	req, err := http.NewRequest("GET", "/api/getIndex", bytes.NewBuffer(jsonGetIndex))
-	if err != nil {
-		t.Fatal(err)
-	}
+		getIndex(rr, req)
 
-	rr := httptest.NewRecorder()
-	handlerGetIndex.ServeHTTP(rr, req)
+		err := checkStatusCodeAndBody(http.StatusBadRequest, rr.Result().StatusCode, "", rr.Body.String())
+		if err != nil {
+			t.Fatal(err)
+		}
+	})
 
-	if status := rr.Code; status != http.StatusBadRequest {
-		t.Errorf("handler returned wrong status code: got %v want %v",
-			status, http.StatusBadRequest)
-	}
+	// Tests the basic functionality of the function.
+	t.Run("Basic Index Retrieval", func(t *testing.T) {
+		clearGlobalSlice()
 
-	signUserUp("student1", "dab")
+		// Add a user to the global slice as if they had signed up.
+		creds := Credentials{"student1", "dab"}
+		UserSlice = append(UserSlice, creds)
 
-	// Now get index of registered user
-	req, err = http.NewRequest("GET", "/api/getIndex", bytes.NewBuffer(jsonGetIndex))
-	if err != nil {
-		t.Fatal(err)
-	}
+		req, rr, err := createRequestAndResponseWithJSON(creds, http.MethodGet, "/api/getIndex")
+		if err != nil {
+			t.Fatal(err)
+		}
 
-	rr = httptest.NewRecorder()
-	handlerGetIndex.ServeHTTP(rr, req)
+		getIndex(rr, req)
 
-	if status := rr.Code; status != http.StatusOK {
-		t.Errorf("handler returned wrong status code: got %v want %v",
-			status, http.StatusOK)
-	}
-
-	expected := `0`
-	if rr.Body.String() != expected {
-		t.Errorf("handler returned unexpected body: got %v want %v",
-			rr.Body.String(), expected)
-	}
-
-	clearGlobalSlice()
+		// We should get 0 back.
+		err = checkStatusCodeAndBody(http.StatusOK, rr.Result().StatusCode, "0", rr.Body.String())
+		if err != nil {
+			t.Fatal(err)
+		}
+	})
 }
 
+// Tests the correctness of the getPassword function.
 func TestGetPW(t *testing.T) {
-	clearGlobalSlice()
-	handlerGetPW := http.HandlerFunc(getPassword)
+	// Basic functionality test.
+	t.Run("Basic Get Password", func(t *testing.T) {
+		// Get 1 user into the global slice.
+		clearGlobalSlice()
+		creds := Credentials{"student1", "dab"}
+		UserSlice = append(UserSlice, creds)
 
-	// Get password of registered user
-	signUserUp("student1", "dab")
+		req := httptest.NewRequest(http.MethodGet, "/api/getPassword", strings.NewReader("student1"))
+		rr := httptest.NewRecorder()
 
-	var jsonGetPW = []byte(`{"username":"student1"}`)
+		getPassword(rr, req)
 
-	req, err := http.NewRequest("GET", "/api/getPW", bytes.NewBuffer(jsonGetPW))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	rr := httptest.NewRecorder()
-	handlerGetPW.ServeHTTP(rr, req)
-
-	if status := rr.Code; status != http.StatusOK {
-		t.Errorf("handler returned wrong status code: got %v want %v",
-			status, http.StatusOK)
-	}
-
-	expected := `dab`
-	if rr.Body.String() != expected {
-		t.Errorf("handler returned unexpected body: got %v want %v",
-			rr.Body.String(), expected)
-	}
+		err := checkStatusCodeAndBody(http.StatusOK, rr.Result().StatusCode, "dab", rr.Body.String())
+		if err != nil {
+			t.Fatal(err)
+		}
+	})
 
 	// Get password of unregistered user
-	var jsonGetPWBad = []byte(`{"username":"student001"}`)
+	t.Run("Nonexistent User", func(t *testing.T) {
+		clearGlobalSlice()
+		creds := Credentials{"student1", "dab"}
+		UserSlice = append(UserSlice, creds)
 
-	req, err = http.NewRequest("GET", "/api/getPW", bytes.NewBuffer(jsonGetPWBad))
-	if err != nil {
-		t.Fatal(err)
-	}
+		req := httptest.NewRequest(http.MethodGet, "/api/getPassword", strings.NewReader("student001"))
+		rr := httptest.NewRecorder()
 
-	rr = httptest.NewRecorder()
-	handlerGetPW.ServeHTTP(rr, req)
+		getPassword(rr, req)
 
-	if status := rr.Code; status != http.StatusBadRequest {
-		t.Errorf("handler returned wrong status code: got %v want %v",
-			status, http.StatusBadRequest)
-	}
-
-	clearGlobalSlice()
+		err := checkStatusCodeAndBody(http.StatusBadRequest, rr.Result().StatusCode, "", rr.Body.String())
+		if err != nil {
+			t.Fatal(err)
+		}
+	})
 }
 
+// Tests the correctness of the updatePassword function.
 func TestUpdatePW(t *testing.T) {
-	clearGlobalSlice()
-	handlerGetPW := http.HandlerFunc(getPassword)
-	handlerUpdatePW := http.HandlerFunc(updatePassword)
+	t.Run("Basic Update", func(t *testing.T) {
+		clearGlobalSlice()
+		creds := Credentials{"student1", "dab"}
+		UserSlice = append(UserSlice, creds)
 
-	// Sign user up
-	signUserUp("student1", "dab")
+		// Change their password to something else.
+		creds = Credentials{"student1", "dabdab"}
 
-	var jsonGetPW = []byte(`{"username":"student1"}`)
+		req, rr, err := createRequestAndResponseWithJSON(creds, http.MethodPut, "/api/updatePW")
+		if err != nil {
+			t.Fatal(err)
+		}
 
-	req, err := http.NewRequest("GET", "/api/getPW", bytes.NewBuffer(jsonGetPW))
-	if err != nil {
-		t.Fatal(err)
-	}
+		updatePassword(rr, req)
 
-	rr := httptest.NewRecorder()
-	handlerGetPW.ServeHTTP(rr, req)
+		if rr.Result().StatusCode != http.StatusOK {
+			t.Fatalf("Incorrect status code returned! Expected: %d Actual: %d", http.StatusOK, rr.Result().StatusCode)
+		}
 
-	if status := rr.Code; status != http.StatusOK {
-		t.Errorf("handler returned wrong status code: got %v want %v",
-			status, http.StatusOK)
-	}
-
-	expected := `dab`
-	if rr.Body.String() != expected {
-		t.Errorf("handler returned unexpected body: got %v want %v",
-			rr.Body.String(), expected)
-	}
-
-	// Update password
-	var jsonUpdatePW = []byte(`{"username":"student1", "password":"dabdab"}`)
-
-	req, err = http.NewRequest("GET", "/api/updatePW", bytes.NewBuffer(jsonUpdatePW))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	rr = httptest.NewRecorder()
-	handlerUpdatePW.ServeHTTP(rr, req)
-
-	if status := rr.Code; status != http.StatusOK {
-		t.Errorf("handler returned wrong status code: got %v want %v",
-			status, http.StatusOK)
-	}
-
-	// Verify password was changed
-	var jsonGetNewPW = []byte(`{"username":"student1"}`)
-
-	req, err = http.NewRequest("GET", "/api/getPW", bytes.NewBuffer(jsonGetNewPW))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	rr = httptest.NewRecorder()
-	handlerGetPW.ServeHTTP(rr, req)
-
-	if status := rr.Code; status != http.StatusOK {
-		t.Errorf("handler returned wrong status code: got %v want %v",
-			status, http.StatusOK)
-	}
-
-	expected = `dabdab`
-	if rr.Body.String() != expected {
-		t.Errorf("handler returned unexpected body: got %v want %v",
-			rr.Body.String(), expected)
-	}
+		// Check that the UserSlice is still the same length and the password has been updated.
+		if len(UserSlice) != 1 || UserSlice[0].Password != "dabdab" {
+			t.Fatal("Password not updated!")
+		}
+	})
 
 	// Try to update password of unregistered user
-	var jsonUpdatePWBad = []byte(`{"username":"student001"}`)
+	t.Run("Update Non Existent", func(t *testing.T) {
+		clearGlobalSlice()
+		creds := Credentials{"student1", "dab"}
+		UserSlice = append(UserSlice, creds)
 
-	req, err = http.NewRequest("GET", "/api/updatePW", bytes.NewBuffer(jsonUpdatePWBad))
-	if err != nil {
-		t.Fatal(err)
-	}
+		creds = Credentials{"student001", "dabdab"}
 
-	rr = httptest.NewRecorder()
-	handlerUpdatePW.ServeHTTP(rr, req)
+		req, rr, err := createRequestAndResponseWithJSON(creds, http.MethodPut, "/api/updatePW")
+		if err != nil {
+			t.Fatal(err)
+		}
 
-	if status := rr.Code; status != http.StatusBadRequest {
-		t.Errorf("handler returned wrong status code: got %v want %v",
-			status, http.StatusBadRequest)
-	}
+		updatePassword(rr, req)
 
-	clearGlobalSlice()
+		if rr.Result().StatusCode != http.StatusBadRequest {
+			t.Fatalf("Incorrect status code returned! Expected: %d Actual: %d", http.StatusBadRequest, rr.Result().StatusCode)
+		}
+
+		if len(UserSlice) != 1 || UserSlice[0].Password != "dab" {
+			t.Fatal("Password updated when an error occurred!")
+		}
+	})
 }
 
+// Tests the correctness of the deleteUser function.
 func TestDeleteUser(t *testing.T) {
-	clearGlobalSlice()
-	handlerDelete := http.HandlerFunc(deleteUser)
+	// Simply deletes a user that's in the slice.
+	t.Run("Delete Basic", func(t *testing.T) {
+		clearGlobalSlice()
+		creds := Credentials{"student1", "dab"}
+		UserSlice = append(UserSlice, creds)
 
-	signUserUp("student1", "dab")
+		req, rr, err := createRequestAndResponseWithJSON(creds, http.MethodDelete, "/api/deleteUser")
+		if err != nil {
+			t.Fatal(err)
+		}
 
-	var jsonDelete = []byte(`{"username":"student1"}`)
-	req, _ := http.NewRequest("DELETE", "/api/deleteUser", bytes.NewBuffer(jsonDelete))
+		deleteUser(rr, req)
 
-	rr := httptest.NewRecorder()
-	handlerDelete.ServeHTTP(rr, req)
+		if rr.Result().StatusCode != http.StatusOK {
+			t.Fatalf("Incorrect status code returned! Expected: %d Actual: %d", http.StatusOK, rr.Result().StatusCode)
+		}
+		if len(UserSlice) != 0 {
+			t.Fatalf("User was not deleted from slice!")
+		}
+	})
 
-	if status := rr.Code; status != http.StatusOK {
-		t.Errorf("handler returned wrong status code: got %v want %v",
-			status, http.StatusOK)
-	}
+	// Tries to delete a user that doesn't exist.
+	t.Run("Delete Non-Existent", func(t *testing.T) {
+		clearGlobalSlice()
+		creds := Credentials{"student1", "dab"}
+		UserSlice = append(UserSlice, creds)
 
-	// Try to delete user again
-	req, _ = http.NewRequest("DELETE", "/api/deleteUser", bytes.NewBuffer(jsonDelete))
+		creds = Credentials{"student0001", ""}
+		req, rr, err := createRequestAndResponseWithJSON(creds, http.MethodDelete, "/api/deleteUser")
+		if err != nil {
+			t.Fatal(err)
+		}
 
-	rr = httptest.NewRecorder()
-	handlerDelete.ServeHTTP(rr, req)
+		deleteUser(rr, req)
 
-	if status := rr.Code; status != http.StatusBadRequest {
-		t.Errorf("handler returned wrong status code: got %v want %v",
-			status, http.StatusBadRequest)
-	}
+		if rr.Result().StatusCode != http.StatusBadRequest {
+			t.Fatalf("Incorrect status code returned! Expected: %d Actual: %d", http.StatusBadRequest, rr.Result().StatusCode)
+		}
+		if len(UserSlice) == 0 {
+			t.Fatalf("User was deleted from slice!")
+		}
+	})
 }
 
 // Helper Methods and JSON
@@ -519,26 +487,4 @@ func createRequestAndResponseWithJSON(jsonObj interface{}, method, endpoint stri
 	req := httptest.NewRequest(method, endpoint, b)
 	rec := httptest.NewRecorder()
 	return req, rec, nil
-}
-
-func signUserUp(username string, password string) {
-	var jsonStr = []byte(fmt.Sprintf(`{"username":"%v", "password":"%v"}`, username, password))
-
-	rr := httptest.NewRecorder()
-	handlerSignup := http.HandlerFunc(signup)
-
-	req, _ := http.NewRequest("POST", "/api/signup", bytes.NewBuffer(jsonStr))
-
-	handlerSignup.ServeHTTP(rr, req)
-}
-
-func clearUser(username string) {
-	var jsonStr = []byte(fmt.Sprintf(`{"username":"%v"}`, username))
-
-	rr := httptest.NewRecorder()
-	handlerDelete := http.HandlerFunc(deleteUser)
-
-	req, _ := http.NewRequest("DELETE", "/api/deleteUser", bytes.NewBuffer(jsonStr))
-
-	handlerDelete.ServeHTTP(rr, req)
 }
