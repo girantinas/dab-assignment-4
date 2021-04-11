@@ -145,7 +145,6 @@ func getIndex(response http.ResponseWriter, request *http.Request) {
 		index, userErr := findUser(creds.Username)
 		if userErr != nil {
 			http.Error(response, "", http.StatusBadRequest)
-			fmt.Printf("Got here")
 		} else {
 			fmt.Fprintf(response, "%d", index)
 		}
