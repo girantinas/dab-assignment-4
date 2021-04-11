@@ -7,7 +7,7 @@ Before you read this, we encourage you to read over `api/api.go` and try to gues
 # API
 
 ### Definitions For This Assignment
-- An **empty response** is an HTTP response with an empty body. It still has a status code. **UPDATE 4/11** We are also allowing an empty response to contain a newline character.
+- An **empty response** is an HTTP response with an empty body. It still has a status code. **UPDATE 4/11** We are also allowing an empty response to contain a newline character in the body.
 - An **invalid JSON for an endpoint** is a JSON that has bad syntax or at least one of the required keys for the endpoint has a value of the empty string when unmarshalled by Go. A JSON is **not** invalid if it has more keys than required by the endpoint (I.E. if an endpoint needs only needs a `username` and the request has a JSON with a `username` and `password`, the JSON is valid). **For all endpoints that require a JSON, if the given JSON is invalid or there is no JSON in the request, return an empty response with `400 Bad Request`.**
 
 |   API Endpoint   | HTTP Method |                                                                       Description                                                                       |                                                                                                       Post Conditions                                                                                                      |
