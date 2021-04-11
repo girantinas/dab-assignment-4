@@ -464,8 +464,10 @@ func checkStatusCodeAndBody(expectedCode, actualCode int, expectedBody, actualBo
 	if actualCode != expectedCode {
 		return fmt.Errorf("Incorrect status code returned! Expected: %d Actual: %d", expectedCode, actualCode)
 	}
-	if actualBody != expectedBody {
-		return fmt.Errorf("Incorrect body returned! Expected: \"%s\" Actual: \"%s\"", expectedBody, actualBody)
+	// We allow a special case for an empty response to also contain the empty string.
+	// This is because http.Error() appends an newline to the end of the response when called.
+	if (actualBody != expectedBody) && !(expectedBody == "" && actualBody == "\n") {
+		return fmt.Errorf("Incorrect body returned! Expected: %#v Actual: %#v", expectedBody, actualBody)
 	}
 	return nil
 }
