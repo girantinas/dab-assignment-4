@@ -5,10 +5,10 @@ package api
 // you'd like, but these are the ones we used to do this. To use the package,
 // just remove the underscore in front of it.
 import (
-	_ "encoding/json"
-	_ "fmt"
+	"encoding/json"
+	"errors"
+	"fmt"
 	"net/http"
-	_ "strconv"
 
 	"github.com/gorilla/mux"
 )
@@ -25,20 +25,45 @@ func RegisterRoutes(router *mux.Router) {
 	router.HandleFunc("/api/getCookie", getCookie).Methods(http.MethodGet)
 	router.HandleFunc("/api/getQuery", getQuery).Methods(http.MethodGet)
 	router.HandleFunc("/api/getJSON", getJSON).Methods(http.MethodGet)
-
-	/* YOUR CODE HERE */
+	router.HandleFunc("/api/signup", signup).Methods(http.MethodPost)
+	router.HandleFunc("/api/getIndex", getIndex).Methods(http.MethodGet)
+	router.HandleFunc("/api/getPW", getPassword).Methods(http.MethodGet)
+	router.HandleFunc("/api/updatePW", updatePassword).Methods(http.MethodPut)
+	router.HandleFunc("/api/deleteUser", deleteUser).Methods(http.MethodDelete)
 }
 
 // Obtain the "access_token" cookie's value and write it to the response.
 // If there is no such cookie, write an empty string to the response.
 func getCookie(response http.ResponseWriter, request *http.Request) {
-	/*YOUR CODE HERE*/
+	cookie, err := request.Cookie("access_token")
+	if err != nil {
+		fmt.Fprint(response, "")
+	} else {
+		fmt.Fprint(response, cookie.Value)
+	}
 }
 
 // Obtain the "userID" query parameter and write it to the response.
 // If there is no such query parameter, write an empty string to the response.
 func getQuery(response http.ResponseWriter, request *http.Request) {
-	/*YOUR CODE HERE*/
+	userIDQuery := request.URL.Query().Get("userID")
+	fmt.Fprint(response, userIDQuery)
+}
+
+//Reads an HTTP Request as a credentials pointer,
+// passing back an error in the case of problems.
+func readJSON(request *http.Request) (*Credentials, error) {
+	var creds Credentials
+	err := json.NewDecoder(request.Body).Decode(&creds)
+	if err != nil {
+		return &creds, errors.New("Bad JSON")
+	} else if creds.Password == "" {
+		return &creds, errors.New("No Password")
+	} else if creds.Username == "" {
+		return &creds, errors.New("No Username")
+	} else {
+		return &creds, nil
+	}
 }
 
 // Our JSON file will look like this:
@@ -53,7 +78,22 @@ func getQuery(response http.ResponseWriter, request *http.Request) {
 //
 // Make sure to error check! What kind of errors can we expect here?
 func getJSON(response http.ResponseWriter, request *http.Request) {
-	/*YOUR CODE HERE*/
+	creds, err := readJSON(request)
+	if err != nil {
+		http.Error(response, "", http.StatusBadRequest)
+	} else {
+		fmt.Fprint(response, creds.Username+"\n"+creds.Password)
+	}
+}
+
+//Returns the index of a user with a given username
+func findUser(username string) (int, error) {
+	for i, creds := range UserSlice {
+		if creds.Username == username {
+			return i, nil
+		}
+	}
+	return -1, errors.New("User Not Found")
 }
 
 // Our JSON file will look like this:
@@ -71,7 +111,18 @@ func getJSON(response http.ResponseWriter, request *http.Request) {
 // If you aren't sure how to append to a slice, check this out: https://tour.golang.org/moretypes/15.
 // On success, make sure the status code is 201 Status Created!
 func signup(response http.ResponseWriter, request *http.Request) {
-	/*YOUR CODE HERE*/
+	creds, err := readJSON(request)
+	if err != nil {
+		http.Error(response, "", http.StatusBadRequest)
+	} else {
+		_, userErr := findUser(creds.Username)
+		if userErr != nil {
+			UserSlice = append(UserSlice, *creds)
+			response.WriteHeader(201)
+		} else {
+			http.Error(response, "", http.StatusConflict)
+		}
+	}
 }
 
 // Our JSON file will look like this:
@@ -87,7 +138,18 @@ func signup(response http.ResponseWriter, request *http.Request) {
 //
 // Make sure to error check! What kind of errors can we expect here?
 func getIndex(response http.ResponseWriter, request *http.Request) {
-	/*YOUR CODE HERE*/
+	creds, err := readJSON(request)
+	if err != nil && err.Error() != "No Password" {
+		http.Error(response, "", http.StatusBadRequest)
+	} else {
+		index, userErr := findUser(creds.Username)
+		if userErr != nil {
+			http.Error(response, "", http.StatusBadRequest)
+			fmt.Printf("Got here")
+		} else {
+			fmt.Fprintf(response, "%d", index)
+		}
+	}
 }
 
 // Our JSON file will look like this:
@@ -101,7 +163,17 @@ func getIndex(response http.ResponseWriter, request *http.Request) {
 //
 // Make sure to error check! What kind of errors can we expect here?
 func getPassword(response http.ResponseWriter, request *http.Request) {
-	/*YOUR CODE HERE*/
+	creds, err := readJSON(request)
+	if err != nil && err.Error() != "No Password" {
+		http.Error(response, "", http.StatusBadRequest)
+	} else {
+		index, userErr := findUser(creds.Username)
+		if userErr != nil {
+			http.Error(response, "", http.StatusBadRequest)
+		} else {
+			fmt.Fprint(response, UserSlice[index].Password)
+		}
+	}
 }
 
 // Our JSON file will look like this:
@@ -117,7 +189,23 @@ func getPassword(response http.ResponseWriter, request *http.Request) {
 //
 // Make sure to error check! What kind of errors can we expect here?
 func updatePassword(response http.ResponseWriter, request *http.Request) {
-	/*YOUR CODE HERE*/
+	creds, err := readJSON(request)
+	if err != nil {
+		http.Error(response, "", http.StatusBadRequest)
+	} else {
+		index, userErr := findUser(creds.Username)
+		if userErr != nil {
+			http.Error(response, "", http.StatusBadRequest)
+		} else {
+			UserSlice[index].Password = creds.Password
+		}
+	}
+}
+
+func remove(slice []Credentials, index int) []Credentials {
+	end := len(slice) - 1
+	slice[index] = slice[end]
+	return slice[:end]
 }
 
 // Our JSON file will look like this:
@@ -135,5 +223,15 @@ func updatePassword(response http.ResponseWriter, request *http.Request) {
 //
 // Make sure to error check! What kind of errors can we expect here?
 func deleteUser(response http.ResponseWriter, request *http.Request) {
-	/*YOUR CODE HERE*/
+	creds, err := readJSON(request)
+	if err != nil {
+		http.Error(response, "", http.StatusBadRequest)
+	} else {
+		index, userErr := findUser(creds.Username)
+		if userErr != nil {
+			http.Error(response, "", http.StatusBadRequest)
+		} else {
+			UserSlice = remove(UserSlice, index)
+		}
+	}
 }
